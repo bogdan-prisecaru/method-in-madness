@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "strictNullChecks": false,
+    "importHelpers": true,
+    "baseUrl": ".",
+    "paths": {
+      "@bootstrap/*": ["client/src/bootstrap/*"],
+      "@module/*": ["client/src/module/*"],
+      "@webc/*": ["client/src/webc/*"]
+    }
+  },
+
+  "exclude": [ "node_modules" ],
+
+  "awesomeTypescriptLoaderOptions": {
+    "useWebpackText": true
+  },
+
+  "buildOnSave": false,
+
+  "formatCodeOptions": {
+    "indentSize": 2,
+    "tabSize": 2,
+    "convertTabsToSpaces": true
+  },
+
+  "atom": {
+    "formatOnSave": true
+  }
+}
