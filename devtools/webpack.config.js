@@ -43,6 +43,11 @@ module.exports = function(config) {
     plugins: [
       new webpack.ContextReplacementPlugin(/\@angular(\\|\/)core(\\|\/)esm5/, path.join(process.cwd(), alias.path.client)),
       new HtmlWebpackPlugin({
+        template: path.resolve(`${alias.path.client}/index.ejs`),
+        chunksSortMode: function(a, b) {
+          const entryPoints = ['polyfill', 'vendor', 'app'];
+          return entryPoints.indexOf(a.names[0]) - entryPoints.indexOf(b.names[0]);
+        },
         metadata: METADATA,
         inject: 'body' // we need set to body for ng4 - otherwise it breaks
       }),

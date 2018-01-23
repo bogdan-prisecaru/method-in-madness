@@ -46,7 +46,27 @@ module.exports = (config) => {
       }
     },
     module: {
-      rules: []
+      rules: [
+        {
+          test: /\.scss$/,
+          exclude: /node_modules/,
+          use: [
+            {
+              loader: 'style-loader'
+            },
+            {
+              loader: 'css-loader'
+            },
+            {
+              loader: 'sass-loader',
+              options: {
+                sourceMap: false,
+                includePaths: []
+              }
+            }
+          ]
+        }
+      ]
     }
   }
 }
