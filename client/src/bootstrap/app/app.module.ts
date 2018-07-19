@@ -1,28 +1,27 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
-import { NgModule, ApplicationRef } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { RouterModule, PreloadAllModules } from '@angular/router';
 
-import { AppComponent } from './app.component';
 import { AppRoutes } from './app.routes';
-
-import { ShowroomComponent } from '@module/showroom/showroom.component';
-
+import { AppComponent } from './app.component';
 
 @NgModule({
+  bootstrap: [AppComponent],
+  declarations: [
+    AppComponent
+  ],
   imports: [
     BrowserModule,
     FormsModule,
     HttpModule,
-    AppRoutes
+    RouterModule.forRoot(AppRoutes, {
+      useHash: Boolean(history.pushState) === false,
+      preloadingStrategy: PreloadAllModules
+    })
   ],
-  declarations: [
-    AppComponent,
-    ShowroomComponent
-  ],
-  providers: [], // services
-  bootstrap: [AppComponent],
+  providers: []
 })
 
 

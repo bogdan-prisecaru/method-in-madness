@@ -1,6 +1,5 @@
 import {
   Component,
-  OnInit,
   ViewEncapsulation
 } from '@angular/core';
 
@@ -9,6 +8,7 @@ import {
   encapsulation: ViewEncapsulation.None,
   templateUrl: './app.component.html'
 })
+
 
 export class AppComponent {
   public ngOnInit() {

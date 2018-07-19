@@ -2,32 +2,32 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
+    "sourceMap": true,
     "moduleResolution": "node",
+    "allowJs": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "sourceMap": true,
     "strictNullChecks": false,
-    "importHelpers": true,
     "baseUrl": ".",
     "paths": {
       "@bootstrap/*": ["client/src/bootstrap/*"],
-      "@module/*": ["client/src/module/*"],
-      "@webc/*": ["client/src/webc/*"]
+      "@modules/*": ["client/src/modules/*"],
+      "@shared/*": ["client/src/shared/*"],
+      "@ui/*": ["client/src/ui/*"]
     }
   },
 
-  "exclude": [ "node_modules" ],
-
-  "awesomeTypescriptLoaderOptions": {
-    "useWebpackText": true
-  },
+  "exclude": [
+    "node_modules"
+  ],
 
   "buildOnSave": false,
 
   "formatCodeOptions": {
+    "baseIndentSize": 0,
     "indentSize": 2,
     "tabSize": 2,
+    "newLineCharacter": "\n",
     "convertTabsToSpaces": true
   },
 
