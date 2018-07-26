@@ -1,0 +1,55 @@
+chord {
+  height: 800px;
+  width: 1000px;
+  display: flex;
+}
+
+.chord-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.chord-outer-band-arc {
+  stroke-width: 2px;
+  stroke: #fff;
+  cursor: pointer;
+}
+
+.chord-outer-band-label {
+  fill: #fff;
+}
+
+.chord-outer-band-label textPath {
+  text-anchor: middle;
+  alignment-baseline: middle;
+}
+
+.chord-inner-band-arc {
+  stroke-width: 2px;
+  stroke: #fff;
+  cursor: pointer;
+}
+
+.chord-inner-band-label {
+  fill: #fff;
+}
+
+.chord-inner-band-label textPath {
+  text-anchor: middle;
+  alignment-baseline: middle;
+}
+
+.chord-node-graphic {
+
+}
+
+.chord-node-label {
+
+}
+
+.chord-connection {
+  stroke-width: 1px;
+  stroke: #000;
+  fill: none;
+  cursor: pointer;
+}

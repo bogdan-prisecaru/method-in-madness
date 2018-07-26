@@ -13,7 +13,8 @@
       "@bootstrap/*": ["client/src/bootstrap/*"],
       "@modules/*": ["client/src/modules/*"],
       "@shared/*": ["client/src/shared/*"],
-      "@ui/*": ["client/src/ui/*"]
+      "@ui/*": ["client/src/ui/*"],
+      "@server/*": ["server/*"],
     }
   },
 

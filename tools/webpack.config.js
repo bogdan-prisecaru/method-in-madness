@@ -56,8 +56,9 @@ module.exports = function(config) {
         '@modules': path.resolve(path.join(process.cwd(), 'client/src/modules')),
         '@shared': path.resolve(path.join(process.cwd(), 'client/src/shared')),
         '@ui': path.resolve(path.join(process.cwd(), 'client/src/ui')),
+        '@server': path.resolve(path.join(process.cwd(), 'server')),
       },
-      extensions: ['.html', '.css', '.scss', '.js', '.ts', '.json'],
+      extensions: ['.ts', '.js', '.css', '.scss', '.html', '.json'],
       modules: ['node_modules', 'client/src', 'server', 'tools']
     },
     module: {
@@ -79,6 +80,11 @@ module.exports = function(config) {
         }, {
           loader: 'angular2-template-loader'
         }]
+      }, {
+        test: /[\/\\]@angular[\/\\]core[\/\\].+\.js$/,
+        parser: {
+          system: true
+        }
       }]
     }
   }, require('./webpack/' + _CONFIG_.environment)(_CONFIG_));

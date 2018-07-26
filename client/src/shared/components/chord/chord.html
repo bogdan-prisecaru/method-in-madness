@@ -1,9 +1,25 @@
-<svg class="chord-svg">
-  <g class="chord-outer-band-segments"></g>
+<svg class="chord-svg" #svg>
+  <g class="chord-outer-band-arcs"></g>
   <g class="chord-outer-band-labels"></g>
-  <g class="chord-inner-band-segments"></g>
+  <g class="chord-inner-band-arcs"></g>
   <g class="chord-inner-band-labels"></g>
   <g class="chord-node-graphics"></g>
   <g class="chord-node-labels"></g>
-  <g class="chord-arcs"></g>
+  <g class="chord-connections"></g>
+  <defs> <!-- defs can be received from parent directive or service -->
+    <g id="chord-def-node-private">
+      <circle style="fill:##555555;" cx="6" cy="6" r="6" />
+    </g>
+
+    <g id="chord-def-node-shared">
+      <circle style="fill:##555555;" cx="6" cy="6" r="6" />
+      <circle style="fill:#FFFFFF;" cx="6" cy="6" r="4" />
+      <circle style="fill:##555555;" cx="6" cy="6" r="2" />
+    </g>
+
+    <g id="chord-def-node-external">
+      <circle style="fill:##555555;" cx="6" cy="6" r="6" />
+      <circle style="fill:#FFFFFF;" cx="6" cy="6" r="4" />
+    </g>
+  </defs>
 </svg>

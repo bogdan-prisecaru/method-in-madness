@@ -36,10 +36,21 @@ export class GraphicLib {
   /**
    * Resolves the length of the rendered text
    * @param - {SVGTextContentElement} element - text element context
-   * @returns {number}
+   * @returns
    */
   static getRenderedTextLength(element: SVGTextContentElement): number {
     return Math.ceil(element.getComputedTextLength());
+  }
+
+  /**
+   * Resolves a sliced text
+   * @param text - string to be sliced
+   * @param n - number of chars that have to be sliced from the end of text
+   * @param appendix - what should we replace the last chars with
+   * @returns
+   */
+  static getSlicedText(text: string, n: number, appendix: string = '...'): string {
+    return text.slice(0, -1 * (n + 1)) + appendix;
   }
 
   /**
@@ -117,7 +128,7 @@ export class GraphicLib {
    * @param key - Key based on which we prepare our scale
    * @returns
    */
-  static getArcAngle(data: any[], index, key) {
+  static getArcAngle(data: any[], index: number, key) {
     let scale = this.getLinearScaleByKey(key, data);
 
     return data.reduce((acc, item, i) => {
@@ -125,6 +136,35 @@ export class GraphicLib {
 
       return Array.isArray(item[key]) ? acc + scale(item[key].length) : acc + scale(item[key]);
     }, 0);
+  }
+
+  /**
+   * Resolves a child angle
+   * @returns
+   */
+  static getChildArcAngle(parent: any, index: number) {
+    let scale = d3.scaleLinear().domain([0, parent.nodes.length]).range([0, parent.endAngle - parent.startAngle]);
+
+    return parent.children.reduce((acc, child: string, i) => {
+      if (i >= index) { return acc; }
+
+      return acc + scale(parent.nodes.filter(node => node.tags.indexOf(child) !== -1).length);
+    }, parent.startAngle);
+  }
+
+  /**
+   * Resolves the relative middle point of an arc
+   * @param ...args - Destructured argument - Arc properties
+   */
+  static getArcMiddlePoint({ outerRadius, innerRadius, startAngle, endAngle }): { dx: number, dy: number } {
+    let arcHeight: number = Math.abs(outerRadius - innerRadius);
+    let middlePointRadius: number = innerRadius + arcHeight / 2;
+    let arcLength: number = GraphicLib.getArcLength(startAngle, endAngle, middlePointRadius);
+
+    let dx = arcLength / 2;
+    let dy = arcHeight / 2; // (GraphicLib.isAngleInLowerQuadrants(startAngle, endAngle) ? -1 : 1);
+
+    return { dx: dx, dy: dy };
   }
 
 
@@ -162,7 +202,7 @@ export class GraphicLib {
    */
   static getLinearBetweenAngles(size: number, startAngle: number, endAngle: number) {
     // [----/----/----]  the reason we add size + 1 is because (i.e) 2 points means 3 segments
-    return d3.scaleLinear().domain([0, size + 1]).range([startAngle, endAngle]);
+    return d3.scaleLinear().domain([0, size]).range([startAngle, endAngle]);
   }
 
   /**

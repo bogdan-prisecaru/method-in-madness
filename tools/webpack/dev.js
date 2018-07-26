@@ -11,13 +11,17 @@ const assetHost = process.env.ASSET_HOST || host + '/';
 
 
 module.exports = (config) => {
+  console.log(`*** DevServer Host: ${host} ***`);
+
   return {
     entry: {
       app: [
+        // 'webpack-hot-middleware/client',
         'webpack-dev-server/client?' + host,
         'webpack/hot/only-dev-server'
       ]
     },
+    mode: 'development',
     plugins: [
       new webpack.DefinePlugin({
         DEVELOPMENT: true
@@ -36,11 +40,19 @@ module.exports = (config) => {
         path.join(process.cwd(), 'dist')
       ],
       clientLogLevel: 'none',
-      noInfo: true,
-      historyApiFallback: {
-        disableDotRule: true,
-        proxy: {} // for proxy check webpack documentation
-      }
+      proxy: {}
+    },
+    module: {
+      rules: [{
+        test: /\.(sc|c)ss$/,
+        exclude: /node_modules/,
+        use: [{
+          loader: 'style-loader'
+        }, {
+          loader: 'css-loader'
+        }]
+      }]
     }
   }
+
 }
