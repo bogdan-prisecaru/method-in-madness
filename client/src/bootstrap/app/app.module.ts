@@ -8,8 +8,6 @@ import { DashboardComponent } from '@modules/dashboard/dashboard';
 import { AppComponent } from './app.component';
 import { AppRoutes } from './app.routes';
 
-console.log('@', AppComponent);
-
 @NgModule({
   declarations: [
     AppComponent,

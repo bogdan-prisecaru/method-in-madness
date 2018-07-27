@@ -1,0 +1,33 @@
+{
+  "name": "e2e",
+  "version": "1.0.0",
+  "description": "GUI automation",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rimraf compiledJs jasmine_report",
+    "lint": "tslint --fix -p tsconfig.json",
+    "compile": "tsc -p .",
+    "webdriver": "webdriver-manager update",
+    "pree2e": "npm run clean && npm run compile && npm run webdriver",
+    "e2e": "protractor ./compiledJs/config/protractor.config.js"
+  },
+  "keywords": [
+    "e2e",
+    "automation",
+    "protractor"
+  ],
+  "author": "Prisecaru Bogdan",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/es6-shim": "^0.31.37",
+    "@types/jasmine": "^2.8.8",
+    "@types/jasminewd2": "^2.0.3",
+    "@types/node": "^10.5.3",
+    "jasmine": "^3.1.0",
+    "mongodb": "^3.1.1",
+    "protractor": "^5.4.0",
+    "rimraf": "^2.6.2",
+    "tslint": "^5.11.0",
+    "typescript": "^2.9.2"
+  }
+}

@@ -1,0 +1,18 @@
+barChart {
+  height: 400px;
+  width: 800px;
+  display: flex;
+}
+
+.bar-chart-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.bar-chart-rect-graphic {
+
+}
+
+.bar-chart-rect-label {
+
+}

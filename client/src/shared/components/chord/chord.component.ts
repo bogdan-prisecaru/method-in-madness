@@ -4,10 +4,11 @@ import {
   ElementRef
 } from '@angular/core';
 
+import { GraphicLib, IGraphicComponentModel } from '@shared/resources/GraphicLib';
 import * as d3 from 'd3';
 
 import './chord.css';
-import { GraphicLib } from '@shared/resources/GraphicLib';
+
 const ChordMock = require('@server/mock/chord.js');
 
 @Component({
@@ -18,7 +19,7 @@ const ChordMock = require('@server/mock/chord.js');
 export class ChordComponent {
   @ViewChild('svg') element: ElementRef; // get the root element of component
 
-  public chordModel = {
+  public chordModel: IGraphicComponentModel = {
     ui: {
       height: null,
       width: null,
@@ -54,9 +55,7 @@ export class ChordComponent {
   private segments = [];
 
   // main content
-  // private container = d3.select(this.element);
   private svg = null;
-  // private svg = this.container.select(`.${this.chordModel.dom.svg}`);
 
   // grouping content
   private chordOuterBandArcs = null;

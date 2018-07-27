@@ -3,8 +3,24 @@ import * as d3 from 'd3'; // maybe move this as dep ?
 const D3_LOWER_QUADRANT_START: number = 90;
 const D3_LOWER_QUADRANT_STOP: number = 270;
 
+export interface IGraphicComponentModel {
+  ui: {
+    height: number;
+    width: number;
+    offset?: number;
+    radius?: number;
+  };
+  dom: {
+    container: string;
+    svg: string;
+    groups: { [key: string]: string };
+    elements: { [key: string]: string }
+  };
+}
+
 /**
  * Utility class for d3 graphics
+ * @author Prisecaru Bogdan
  */
 export class GraphicLib {
 
@@ -22,6 +38,16 @@ export class GraphicLib {
 
   static getCoordYbyRadial(angle: number, radial: number): number {
     return Math.cos(angle) * radial * -1;
+  }
+
+  /**
+   * Resolves the maximum item from a data set based on a key
+   * It expects the key value to be a number
+   * @param key - Object key by which to look for
+   * @param data - Data to be iterated for max value
+   */
+  static getMaxByKey(key: string, data: any[]): number {
+    return Math.max.apply(null, data.map(d => d[key]));
   }
 
   /**
@@ -59,8 +85,8 @@ export class GraphicLib {
    * @returns a boolean indicating of it's the lower quadrants
    */
   static isAngleInLowerQuadrants(startAngle: number, endAngle: number): boolean {
-    return startAngle > GraphicLib.convertToRadians(D3_LOWER_QUADRANT_START)
-      && endAngle < GraphicLib.convertToRadians(D3_LOWER_QUADRANT_STOP);
+    return startAngle > GraphicLib.convertToRadians(D3_LOWER_QUADRANT_START) &&
+      endAngle < GraphicLib.convertToRadians(D3_LOWER_QUADRANT_STOP);
   }
 
   /**
@@ -206,7 +232,7 @@ export class GraphicLib {
   }
 
   /**
-   * Resolves a chordBandInnerSegment scale by provided key
+   * Resolves a chord band segment scale by provided key // TODO : Rename / remake this
    * This method will resolve a scale by:
    * 1. item count if no key provided
    * 2. item value if key provided and value is non-array  i.e obj[key] = 144;

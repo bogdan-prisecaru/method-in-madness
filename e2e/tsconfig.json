@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "outDir": "compiledJs/",
+    "sourceMap": true,
+    "moduleResolution": "node",
+    "allowJs": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "strictNullChecks": false,
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["config/*"],
+      "@libs/*": ["libs/*"],
+      "@tests/*": ["tests/*"],
+      "@tools/*": ["tools/*"]
+    }
+  },
+
+  "exclude": [
+    "node_modules"
+  ],
+
+  "buildOnSave": false,
+
+  "formatCodeOptions": {
+    "baseIndentSize": 0,
+    "indentSize": 2,
+    "tabSize": 2,
+    "newLineCharacter": "\n",
+    "convertTabsToSpaces": true
+  },
+
+  "atom": {
+    "formatOnSave": true
+  }
+}

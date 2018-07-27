@@ -21,7 +21,9 @@ class ChordMock {
     });
   }
 
-  get nodes() { return this._nodes; }
+  get nodes() {
+    return this._nodes;
+  }
 }
 
 module.exports = ChordMock;
