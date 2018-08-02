@@ -1,7 +1,13 @@
-import * as d3 from 'd3'; // maybe move this as dep ?
+import * as d3 from 'd3';
 
 const D3_LOWER_QUADRANT_START: number = 90;
 const D3_LOWER_QUADRANT_STOP: number = 270;
+
+// +-----------> X-axis
+// |
+// |
+// |
+// V Y-axis
 
 export interface IGraphicComponentModel {
   ui: {
@@ -18,17 +24,28 @@ export interface IGraphicComponentModel {
   };
 }
 
+export interface IBasicArc {
+  innerRadius: number;
+  outerRadius: number;
+  startAngle: number;
+  endAngle: number;
+}
+
 /**
  * Utility class for d3 graphics
  * @author Prisecaru Bogdan
  */
 export class GraphicLib {
 
+  /**
+   * #### // NOTE: General Computation Methods
+   */
+
   static convertToRadians(angle: number): number {
     return angle * Math.PI / 180;
   }
 
-  static convertToDegress(angle: number): number {
+  static convertToDegrees(angle: number): number {
     return angle * 180 / Math.PI;
   }
 
@@ -38,6 +55,32 @@ export class GraphicLib {
 
   static getCoordYbyRadial(angle: number, radial: number): number {
     return Math.cos(angle) * radial * -1;
+  }
+
+  /**
+   * Resolves a radius between a given width & height (with offset as optional)
+   * @param ..args - Object with dimension data {width, height, offset}
+   * @returns radius
+   */
+  static getRadiusByDimensions({ height = 0, width = 0, offset = 0 }): number {
+    return Math.min(height / 2, width / 2) - offset;
+  }
+
+  /**
+   * Resolves an accumulator based on provided key in data set
+   * This is useful if we have an array of objects and said objects have a key that is an Array
+   * If we want to get all the values for that key, from all entries, we can use this
+   * @param key - Object key by which we base our concat
+   * @param data - Data to be provided and used for concatenation
+   * @param isConcatResult - Boolean to indicate we want to concat (arrays) the key values
+   */
+  static getAggregatedByKey(key: string, data: any[] = [], isConcatResult: boolean = true) {
+    return data.reduce((acc, item) => {
+      if (!key || !item.hasOwnProperty(key)) { return acc; }
+      acc = isConcatResult ? acc.concat(item[key]) : acc + (Array.isArray(item[key]) ? item[key].length : item[key]);
+
+      return acc;
+    }, isConcatResult ? [] : Array.isArray(data[0][key] ? 0 : 0));
   }
 
   /**
@@ -51,32 +94,19 @@ export class GraphicLib {
   }
 
   /**
-   * Resolves a radius between a given width & height (with offset as optional)
-   * @param ..args - Object with dimension data {width, height, offset}
-   * @returns radius
+   * #### // NOTE: Arc Specific Methods
    */
-  static getRadiusByDimensions({ height = 0, width = 0, offset = 0 }): number {
-    return Math.min(height / 2, width / 2) - offset;
-  }
 
   /**
-   * Resolves the length of the rendered text
-   * @param - {SVGTextContentElement} element - text element context
-   * @returns
+   * Resolves an arc path
+   * @returns d3 arc
    */
-  static getRenderedTextLength(element: SVGTextContentElement): number {
-    return Math.ceil(element.getComputedTextLength());
-  }
-
-  /**
-   * Resolves a sliced text
-   * @param text - string to be sliced
-   * @param n - number of chars that have to be sliced from the end of text
-   * @param appendix - what should we replace the last chars with
-   * @returns
-   */
-  static getSlicedText(text: string, n: number, appendix: string = '...'): string {
-    return text.slice(0, -1 * (n + 1)) + appendix;
+  static getArc(): d3.Arc<{}, IBasicArc> {
+    return d3.arc()
+      .innerRadius((d) => d.innerRadius)
+      .outerRadius((d) => d.outerRadius)
+      .startAngle((d) => d.startAngle)
+      .endAngle((d) => d.endAngle);
   }
 
   /**
@@ -84,29 +114,58 @@ export class GraphicLib {
    * d3 starts from the top, what we know to be PI(90) is actually 0 in D3
    * @returns a boolean indicating of it's the lower quadrants
    */
-  static isAngleInLowerQuadrants(startAngle: number, endAngle: number): boolean {
-    return startAngle > GraphicLib.convertToRadians(D3_LOWER_QUADRANT_START) &&
-      endAngle < GraphicLib.convertToRadians(D3_LOWER_QUADRANT_STOP);
+  static isArcInLowerQuadrants(startAngle: number, endAngle: number): boolean {
+    return GraphicLib.convertToRadians(D3_LOWER_QUADRANT_START) < startAngle && GraphicLib.convertToRadians(D3_LOWER_QUADRANT_STOP) > endAngle;
   }
 
   /**
-   * Resolves the transformation for node node labels
-   * If the node is in the left quadrants, then rotate clock wise and translate with -radius
-   * because the text-anchor is set to end.
-   * If the node is in the right quadrants, then rotate counter clock wise and translate with radius
-   * because the text-anchor is set to start
-   * @return {string} the series of transformation
+   * Resolves the length of the arc based on formula
+   * Arc length	=	2	π	R	 (C / 360)
+ 	 * @param angle - Central angle of the arc in degrees (C)
+   * @param radius - Radius of the arc (R)
    */
-  static getTransformByQuadrant({ angle, radius }): string {
-    if (angle > 180) { return `rotate(${angle + 90})translate(${-radius})`; }
-    return `rotate(${angle - 90})translate(${radius})`;
+  static getArcLength(angle: number, radius: number): number {
+    return 2 * Math.PI * radius * (angle / 360);
   }
+
+  /**
+   * Resolves the relative middle point of an arc
+   * @param arc - The arc of which we must determine the mid point
+   */
+  static getArcMidpoint(arc: IBasicArc): { dx: number, dy: number } {
+    let arcHeight = Math.abs(arc.outerRadius - arc.innerRadius);
+    let arcAngle = GraphicLib.convertToDegrees(arc.endAngle - arc.startAngle);
+    let midRadius = arcHeight / 2 + arc.innerRadius;
+    let arcLength = GraphicLib.getArcLength(arcAngle, midRadius);
+
+    return { dx: arcLength / 2, dy: arcHeight / 2 };
+  }
+
+  /**
+   * Resolves an arc angle based on provided key in a data set
+   * @param key - Key based on which we prepare our scale
+   * @param data - Data set provided
+   * @param index - Current index in data set
+   */
+  static getArcAngleByKey(key: string, data: any[], index: number) {
+    let scale = d3.scaleLinear().domain([0, GraphicLib.getAggregatedByKey(key, data, false)]).range([0, 2 * Math.PI])
+
+    return data.reduce((acc, item, i) => {
+      if (i >= index) { return acc; }
+
+      return Array.isArray(item[key]) ? acc + scale(item[key].length) : acc + scale(item[key]);
+    }, 0);
+  }
+
+  /**
+   * #### // NOTE: Line Specific Methods
+   */
 
   /**
    * Resolves a line path
    * @returns d3 line
    */
-  static getLine(tension: number = 0.5) {
+  static getLine(tension: number = 0.5): d3.Line<any> {
     return d3.line()
       .x(function(d: any) { return d.x; })
       .y(function(d: any) { return d.y; })
@@ -114,10 +173,15 @@ export class GraphicLib {
   }
 
   /**
-   * Resolves a pivot point for arcs
+   * Resolves a pivot point for connections
+   * This is usefull to create a loop between two points in a container
+   * @param source - Start coords for connection
+   * @param destination - End coords for connection
+   * @param radius - Radius to calc coords by radial
+   * @returns List of 3 sets of coords
    */
   static getLineCoords(source: any, destination: any, radius: number = 100) {
-    if (JSON.stringify(source) === JSON.stringify(destination)) {
+    if (JSON.stringify(source) === JSON.stringify(destination)) { // might need to make this better
       let coords = GraphicLib.convertToRadians(source.angle);
       let c1 = coords + Math.PI * 1 / 2;
       let c2 = coords + Math.PI;
@@ -137,114 +201,115 @@ export class GraphicLib {
   }
 
   /**
-   * Resolves the length of an arc defined by start, end angles and radius
-   * @param startAngle
-   * @param endAngle
-   * @param radius
-   * @returns arc length
+   * #### // NOTE: Text Specific Methods
    */
-  static getArcLength(startAngle: number, endAngle: number, radius: number): number {
-    return Math.abs(endAngle - startAngle) * radius;
+
+  /**
+   * Resolves the length of the rendered text
+   * @param element - Text element context
+   * @returns The length of the text of the element
+   */
+  static getTextLength(element: SVGTextContentElement): number {
+    return Math.ceil(element.getComputedTextLength());
   }
 
   /**
-   * Resolves an outer segment angle
-   * @param data - Band segment data
-   * @param index - Index of current segment
-   * @param key - Key based on which we prepare our scale
-   * @returns
+   * Resolves the transformation for node labels
+   * If the node is in the left quadrants, then rotate clock wise and translate with -radius
+   * because the text-anchor is set to end.
+   * If the node is in the right quadrants, then rotate counter clock wise and translate with radius
+   * because the text-anchor is set to start
+   * @return The series of transformation
    */
-  static getArcAngle(data: any[], index: number, key) {
-    let scale = this.getLinearScaleByKey(key, data);
-
-    return data.reduce((acc, item, i) => {
-      if (i >= index) { return acc; }
-
-      return Array.isArray(item[key]) ? acc + scale(item[key].length) : acc + scale(item[key]);
-    }, 0);
+  static getTextTransformByRadius(radius: number, angle: number): string {
+    return `
+      rotate(${angle + 90 * (angle > 180 ? 1 : -1)})
+      translate(${radius * (angle > 180 ? -1 : 1)})
+    `;
   }
 
   /**
-   * Resolves a child angle
-   * @returns
+   * Resolves an overflown text
+   * @param element - Text element
+   * @param limit - Size limit
+   * @param offset - Padding of text
    */
-  static getChildArcAngle(parent: any, index: number) {
-    let scale = d3.scaleLinear().domain([0, parent.nodes.length]).range([0, parent.endAngle - parent.startAngle]);
+  static getTextByLimit(element, limit: number, offset: number = 40): string {
+    let textLength = GraphicLib.getTextLength(element);
+    let textContent = element.textContent;
+    let d3element = d3.select(element);
 
-    return parent.children.reduce((acc, child: string, i) => {
-      if (i >= index) { return acc; }
+    while ((textLength + offset) > limit && textContent.length > 0) {
+      textContent = textContent.slice(0, -1);
+      d3element.text(textContent);
+      textLength = GraphicLib.getTextLength(d3element.node());
+    }
 
-      return acc + scale(parent.nodes.filter(node => node.tags.indexOf(child) !== -1).length);
-    }, parent.startAngle);
+    return textContent + '...';
   }
 
   /**
-   * Resolves the relative middle point of an arc
-   * @param ...args - Destructured argument - Arc properties
+   * Resolves a fitted text by provided arc
+   * @param element - Text element
+   * @param arc - Arc into which we will fit the text
    */
-  static getArcMiddlePoint({ outerRadius, innerRadius, startAngle, endAngle }): { dx: number, dy: number } {
-    let arcHeight: number = Math.abs(outerRadius - innerRadius);
-    let middlePointRadius: number = innerRadius + arcHeight / 2;
-    let arcLength: number = GraphicLib.getArcLength(startAngle, endAngle, middlePointRadius);
+  static getTextFittedByArc(element, arc: IBasicArc) {
+    let arcHeight = Math.abs(arc.outerRadius - arc.innerRadius);
+    let arcAngle = GraphicLib.convertToDegrees(arc.endAngle - arc.startAngle);
+    let midRadius = arcHeight / 2 + arc.innerRadius;
+    let arcLength = GraphicLib.getArcLength(arcAngle, midRadius);
 
-    let dx = arcLength / 2;
-    let dy = arcHeight / 2; // (GraphicLib.isAngleInLowerQuadrants(startAngle, endAngle) ? -1 : 1);
-
-    return { dx: dx, dy: dy };
-  }
-
-
-  /**
-   * Resolves an arc path
-   * @returns d3 arc
-   */
-  static getArc() {
-    return d3.arc()
-      .innerRadius((d) => d.innerRadius)
-      .outerRadius((d) => d.outerRadius)
-      .startAngle((d) => d.startAngle)
-      .endAngle((d) => d.endAngle);
+    return GraphicLib.getTextByLimit(element, arcLength);
   }
 
   /**
-   * Resolves a concatenated list based on the provided key
-   * This is useful if we have an array of objects and said objects have a key that is an Array
-   * If we want to get all the values for that key, from all entries, we can use this
-   * @param data
-   * @param key
+   * Resolves a text in a container by making sure it fits
    */
-  static getConcatListByKey<T>(key: string, data: T[] = []) {
-    return data.reduce((acc, item: T) => {
-      if (!key || !item.hasOwnProperty(key)) { return acc; }
+  static getTextFittedByContainer(element, container, angle: number, radius: number) {
+    // let textEndpointX = Math.abs(GraphicLib.getCoordXbyRadial(angle, radius + GraphicLib.getTextLength(element)));
+    // let textEndpointY = Math.abs(GraphicLib.getCoordYbyRadial(angle, radius + GraphicLib.getTextLength(element)));
+    // let entireLength = Math.sqrt(Math.pow(textEndpointX, 2) + Math.pow(textEndpointY, 2));
+    // let adjacentSideLength = Math.ceil(Math.max(textEndpointX - container.width / 2, textEndpointY - container.height / 2));
+    // let adjacentAngle = angle % (Math.PI / 2);
+    // console.log('e', entireLength, 'r', radius);
+    // let textLimit = entireLength - radius - 60;
+    // return GraphicLib.getTextByLimit(element, textLimit);
+    let d3element = d3.select(element);
+    let textLength = GraphicLib.getTextLength(element);
+    let textContent = element.textContent;
+    let textEndpointX = Math.abs(GraphicLib.getCoordXbyRadial(angle, radius + textLength));
+    let textEndpointY = Math.abs(GraphicLib.getCoordYbyRadial(angle, radius + textLength));
+    let containerLimitX = container.width / 2;
+    let containerLimitY = container.height / 2;
+    // console.log('cX', textEndpointX, containerLimitX);
+    // console.log('cY', textEndpointY, containerLimitY);
+    while ((textEndpointX + 50) > containerLimitX && (textEndpointY + 50) > containerLimitY) {
+      // console.log('s', textContent);
+      textContent = textContent.slice(0, -1);
+      d3element.text(textContent);
+      textLength = GraphicLib.getTextLength(d3element.node());
+      textEndpointX = Math.abs(GraphicLib.getCoordXbyRadial(angle, radius + textLength));
+      textEndpointY = Math.abs(GraphicLib.getCoordYbyRadial(angle, radius + textLength));
 
-      acc = acc.concat(item[key]);
-      return acc;
-    }, []);
-  }
+    }
 
-  /**
-   * Resolves a linear scale between two angles
-   * @returns d3 linear scale
-   */
-  static getLinearBetweenAngles(size: number, startAngle: number, endAngle: number) {
-    // [----/----/----]  the reason we add size + 1 is because (i.e) 2 points means 3 segments
-    return d3.scaleLinear().domain([0, size]).range([startAngle, endAngle]);
-  }
+    return textContent + '...';
 
-  /**
-   * Resolves a chord band segment scale by provided key // TODO : Rename / remake this
-   * This method will resolve a scale by:
-   * 1. item count if no key provided
-   * 2. item value if key provided and value is non-array  i.e obj[key] = 144;
-   * 3. item value length if key provided and value is array i.e obj[key] = [{a: b}, {c: d}]
-   * @returns d3 chordBandInnerSegment scale
-   */
-  static getLinearScaleByKey<T>(key: string, data: T[] = [], range: number[] = [0, 2 * Math.PI]) {
-    let total = data.reduce((acc, item: T) => {
-      if (!key || !item.hasOwnProperty(key)) { return acc; }
+    // if (adjacentAngle >= Math.PI / 4) { adjacentAngle = Math.PI / 2 - adjacentAngle; }
+    //
+    // let textLimit = entireLength - radius - (adjacentSideLength / (Math.cos(GraphicLib.convertToDegrees(adjacentAngle))));
+    // // let adjacentAngle = angle % (Math.PI / 2);
+    // // let textLimit = entireLength - radius - ((adjacentAngle >= Math.PI / 4) ? (adjacentSideLength / Math.sin(adjacentAngle)) : (adjacentSideLength / Math.cos(adjacentAngle)));
+    //   // let overflowLength = overflowDiff / (Math.cos(adjacentAngle) || 1);
+    // return GraphicLib.getTextByLimit(element, textLimit);
 
-      return Array.isArray(item[key]) ? acc + item[key].length : acc + item[key];
-    }, 0);
-    return d3.scaleLinear().domain([0, total]).range(range);
+    // let entireLength = Math.sqrt(Math.pow(Math.abs(textEndpointX), 2) + Math.pow(Math.abs(textEndpointY), 2));
+    // let adjacentSideLength = Math.ceil(Math.max(textEndpointX - container.width / 2, textEndpointY - container.height / 2));
+    // let adjacentAngle = angle % (Math.PI / 2);
+    // // console.log(angle);
+    // if (adjacentAngle >= Math.PI / 4) { adjacentAngle = Math.PI / 2 - adjacentAngle; }
+    // let overflowLength = entireLength - radius - (adjacentSideLength / Math.cos(adjacentAngle));
+    //
+    // return GraphicLib.getTextByLimit(element, overflowLength);
   }
 }

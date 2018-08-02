@@ -5,11 +5,11 @@ import {
 } from '@angular/core';
 
 import { GraphicLib, IGraphicComponentModel } from '@shared/resources/GraphicLib';
-import ChordMock = require('@server/mock/chord.js');
-
 import * as d3 from 'd3';
 
 import './chord.css';
+
+const ChordMock = require('@server/mock/chord.js');
 
 @Component({
   selector: 'chord',
@@ -48,7 +48,7 @@ export class ChordComponent {
         chordConnection: 'chord-connection',
       }
     }
-  };
+  }
 
   private mock = new ChordMock(10, 120);
   private nodes = this.mock.nodes;
@@ -108,10 +108,10 @@ export class ChordComponent {
    * Sets bands
    */
   setBands(): void {
-    this.segments = this.getOuterSegmentList(Array.from(new Set(this.nodes.map(node => node.tags[0])))); // main segments
-    console.table(this.segments);
+    this.segments = this.getOuterSegments(Array.from(new Set(this.nodes.map(node => node.tags[0])))); // main segments
+
     this.setOuterBands(this.segments);
-    this.setInnerBands(GraphicLib.getAggregatedByKey('segments', this.segments));
+    this.setInnerBands(GraphicLib.getConcatListByKey('segments', this.segments));
   }
 
   /**
@@ -140,7 +140,7 @@ export class ChordComponent {
 
     this.chordInnerBandLabels
       .selectAll(`text.${this.chordModel.dom.elements.chordInnerBandLabel}`)
-      .data(segments.filter(s => s.nodes.length !== 0), function(segment: any) { return segment.id; }) //.filter(s => s.nodes.length !== 0)
+      .data(segments.filter(s => s.nodes.length !== 0), function(segment: any) { return segment.id; })
       .call(this.renderBandSegmentLabel, `${this.chordModel.dom.elements.chordInnerBandLabel}`);
   }
 
@@ -148,7 +148,7 @@ export class ChordComponent {
    * Sets nodes
    */
   setNodes(): void {
-    let nodes = GraphicLib.getAggregatedByKey('nodes', this.segments);
+    let nodes = GraphicLib.getConcatListByKey('nodes', this.segments);
 
     this.chordNodeGraphics
       .selectAll(`use.${this.chordModel.dom.elements.chordNodeGraphic}`)
@@ -156,7 +156,7 @@ export class ChordComponent {
       .call(this.renderNodeGraphic, `${this.chordModel.dom.elements.chordNodeGraphic}`);
 
     this.chordNodeLabels
-      .selectAll(`text.${this.chordModel.dom.elements.chordNodeLabel}`)
+      .selectAll(`use.${this.chordModel.dom.elements.chordNodeLabel}`)
       .data(nodes, function(node: any) { return node.id; })
       .call(this.renderNodeLabel, `${this.chordModel.dom.elements.chordNodeLabel}`, this.chordModel.ui);
   }
@@ -174,8 +174,8 @@ export class ChordComponent {
   /**
    * Resolves the outer band segments
    */
-  getOuterSegmentList(tags) {
-    let outerSegmentList = tags.map((tag) => { // here we create an array with preliminary data
+  getOuterSegments(tags) {
+    let outerSegments = tags.map((tag) => { // here we create an array with preliminary data
       let nodes = this.nodes.filter(node => node.tags.indexOf(tag) !== -1);
 
       return {
@@ -183,11 +183,11 @@ export class ChordComponent {
         color: `#${((1 << 24) * Math.random() | 0).toString(16)}`,
         label: `(${nodes.length}) ${new Array(5).fill(null).map(() => Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 8)).join('-')}`,
         nodes: nodes,
-        children: Array.from(new Set(nodes.map(node => node.tags[1]))), // need a way to make the index dynamic
+        children: Array.from(new Set(nodes.map(node => node.tags[1]))) // need a way to make the index dynamic
       }
     });
 
-    return outerSegmentList.map(this.getOuterSegment.bind(this));
+    return outerSegments.map(this.getOuterSegment.bind(this));
   }
 
   /**
@@ -197,12 +197,12 @@ export class ChordComponent {
     let outerSegment = Object.assign({}, segment, {
       innerRadius: this.chordModel.ui.radius + 60,
       outerRadius: this.chordModel.ui.radius + 30,
-      startAngle: GraphicLib.getArcAngleByKey('nodes', segments, i),
-      endAngle: GraphicLib.getArcAngleByKey('nodes', segments, i + 1)
+      startAngle: GraphicLib.getArcAngle(segments, i, 'nodes'),
+      endAngle: GraphicLib.getArcAngle(segments, i + 1, 'nodes')
     });
 
     outerSegment.nodes = this.getNodes(outerSegment);
-    outerSegment.segments = this.getInnerSegmentList(outerSegment)
+    outerSegment.segments = this.getInnerSegments(outerSegment);
 
     return outerSegment;
   }
@@ -210,8 +210,8 @@ export class ChordComponent {
   /**
    * Resolves the inner band segments
    */
-  getInnerSegmentList(parentSegment) {
-    let innerSegmentList = parentSegment.children.map(tag => {
+  getInnerSegments(parentSegment) {
+    let innerSegments = parentSegment.children.map(tag => {
       let nodes = parentSegment.nodes.filter(node => node.tags.indexOf(tag) !== -1);
 
       return {
@@ -222,36 +222,21 @@ export class ChordComponent {
       }
     });
 
-    return innerSegmentList.map((innerSegment, i) => {
+    return innerSegments.map((innerSegment, i) => {
       return Object.assign(innerSegment, {
         innerRadius: this.chordModel.ui.radius,
         outerRadius: this.chordModel.ui.radius + 30,
-        startAngle: this.getInnerSegmentAngle(parentSegment, i),
-        endAngle: this.getInnerSegmentAngle(parentSegment, i + 1)
+        startAngle: GraphicLib.getChildArcAngle(parentSegment, i),
+        endAngle: GraphicLib.getChildArcAngle(parentSegment, i + 1)
       });
     });
-  }
-
-  /**
-   * Resolves an inner segment angle
-   * @param parent - Parent segment
-   * @param index- Index of current iteration
-   */
-  getInnerSegmentAngle(parent, index: number) {
-    let scale = d3.scaleLinear().domain([0, parent.nodes.length]).range([0, parent.endAngle - parent.startAngle]);
-
-    return parent['children'].reduce((acc, item, i) => {
-      if (i >= index) { return acc; }
-
-      return acc + scale(parent.nodes.filter(node => node.tags.indexOf(item) !== -1).length);
-    }, parent.startAngle)
   }
 
   /**
    * Resolves nodes
    */
   getNodes(segment) {
-    let scale = d3.scaleLinear().domain([0, segment.nodes.length]).range([segment.startAngle, segment.endAngle]);
+    let scale = GraphicLib.getLinearBetweenAngles(segment.nodes.length, segment.startAngle, segment.endAngle);
     let radius = this.chordModel.ui.radius;
 
     return segment.nodes.map((node, i) => {
@@ -281,9 +266,9 @@ export class ChordComponent {
   }
 
   /**
-   * Renders a band segment arc
+   * Render a segment arc
    */
-  renderBandSegmentArc(selection: d3.Selection<SVGElement, any, HTMLElement, {}>, tag: string) {
+  renderBandSegmentArc(selection, tag: string) {
     // Enter
     selection
       .enter()
@@ -305,32 +290,30 @@ export class ChordComponent {
   }
 
   /**
-   * Renders a band segment label
+   * Render a segment label
    */
-  renderBandSegmentLabel(selection: d3.Selection<SVGElement, any, HTMLElement, {}>, tag: string) {
+  renderBandSegmentLabel(selection, tag: string) {
     // Enter
     selection
       .enter()
       .append('text')
       .attr('class', tag)
-      .attr('dy', (d) => GraphicLib.getArcMidpoint(d).dy)
-      .attr('dx', (d) => GraphicLib.getArcMidpoint(d).dx)
+      .attr('dy', (d) => GraphicLib.getArcMiddlePoint(d).dy)
+      .attr('dx', (d) => GraphicLib.getArcMiddlePoint(d).dx)
       .append('textPath')
       .attr('xlink:href', (d) => `#${d.id}`)
-      .text(function(d) { return d.label; })
       .text(function(d) {
-        return GraphicLib.getTextFittedByArc(this, d);
+        return ChordComponent.getAdjustedSegmentLabel(d);
       });
 
     // Update
     selection
-      .attr('dy', (d) => GraphicLib.getArcMidpoint(d).dy)
-      .attr('dx', (d) => GraphicLib.getArcMidpoint(d).dx)
+      .attr('dy', (d) => GraphicLib.getArcMiddlePoint(d).dy)
+      .attr('dx', (d) => GraphicLib.getArcMiddlePoint(d).dx)
       .select('textPath')
       .attr('xlink:href', (d) => `#${d.id}`)
-      .text(function(d) { return d.label; })
       .text(function(d) {
-        return GraphicLib.getTextFittedByArc(this, d);
+        return ChordComponent.getAdjustedSegmentLabel(d);
       });
 
     // Exit
@@ -340,30 +323,23 @@ export class ChordComponent {
   }
 
   /**
-   * Renders a node graphic (image)
+   * Resolves a node graphic(image) selection
+   * @param selection - D3 selection
    * @returns a <use> selection
    */
-  renderNodeGraphic(selection: d3.Selection<SVGElement, any, HTMLElement, {}>, tag: string) {
+  renderNodeGraphic(selection, tag: string) {
     // Enter
     selection
       .enter()
       .append('use')
       .attr('class', tag)
-      .attr('transform', function(d) {
-        return `translate(${d.x - (d.size / 2)},${d.y - (d.size / 2)})`;
-      })
-      .attr('xlink:href', function(d) {
-        return `#${d.defsId}`;
-      });
+      .attr('transform', (d) => `translate(${d.x - (d.size / 2)},${d.y - (d.size / 2)})`)
+      .attr('xlink:href', (d) => `#${d.defsId}`);
 
     // Update
     selection
-      .attr('transform', function(d) {
-        return `translate(${d.x - (d.size / 2)},${d.y - (d.size / 2)})`;
-      })
-      .attr('xlink:href', function(d) {
-        return `#${d.defsId}`;
-      });
+      .attr('transform', (d) => `translate(${d.x - (d.size / 2)},${d.y - (d.size / 2)})`)
+      .attr('xlink:href', (d) => `#${d.defsId}`);
 
     // Exit
     selection.exit().remove();
@@ -372,37 +348,36 @@ export class ChordComponent {
   }
 
   /**
-   * Renders a node label
+   * Resolves a node label selection
+   * @param selection - D3 selection
    * @returns a <text> selection
    */
-  renderNodeLabel(selection: d3.Selection<SVGElement, any, HTMLElement, {}>, tag: string, { width, height, offset }) {
+  renderNodeLabel(selection, tag, { width, height, offset }) {
     // Enter
     selection
       .enter()
       .append('text')
       .attr('class', tag)
-      .attr('text-anchor', function(d) {
-        return d.angle > 180 ? 'end' : 'start';
-      })
+      .attr('text-anchor', function(d) { return d.angle > 180 ? 'end' : 'start'; })
       .attr('transform', function(d) {
-        return GraphicLib.getTextTransformByRadius(d.radius + offset / 2, d.angle);
+        return GraphicLib.getTransformByQuadrant({ angle: d.angle, radius: d.radius + offset / 2 });
       })
       .text(function(d) { return d.label; })
       .text(function(d) {
-        return GraphicLib.getTextFittedByContainer(this, { width, height }, d.angle, d.radius + 60);
+        let elementLength = GraphicLib.getRenderedTextLength(this);
+        return ChordComponent.getAdjustedNodeLabel(d.label, elementLength, GraphicLib.convertToRadians(d.angle), d.radius + offset, { width, height });
       });
 
     // Update
     selection
-      .attr('text-anchor', function(d) {
-        return d.angle > 180 ? 'end' : 'start';
-      })
+      .attr('text-anchor', function(d) { return d.angle > 180 ? 'end' : 'start'; })
       .attr('transform', function(d) {
-        return GraphicLib.getTextTransformByRadius(d.radius + offset / 2, d.angle);
+        return GraphicLib.getTransformByQuadrant({ angle: d.angle, radius: d.radius + offset / 2 });
       })
       .text(function(d) { return d.label; })
       .text(function(d) {
-        return GraphicLib.getTextFittedByContainer(this, { width, height }, d.angle, d.radius + 60);
+        let elementLength = GraphicLib.getRenderedTextLength(this);
+        return ChordComponent.getAdjustedNodeLabel(d.label, elementLength, GraphicLib.convertToRadians(d.angle), d.radius + offset, { width, height });
       });
 
     // Exit
@@ -412,10 +387,11 @@ export class ChordComponent {
   }
 
   /**
-   * Renders a connection between nodes
-   * @returns a <path> selection
+   * Resolves a connection between nodes
+   * @param selection - D3 selection
+   * @returns a <text> selection
    */
-  renderConnection(selection: d3.Selection<SVGElement, any, HTMLElement, {}>, tag: string) {
+  renderConnection(selection, tag: string) {
     // Enter
     selection
       .enter()
@@ -440,5 +416,50 @@ export class ChordComponent {
     selection.exit().remove();
 
     return selection;
+  }
+
+  /**
+   * Resolves a segment label, if it's bigger than arc length, the text is sliced
+   * @param segment - chord segment
+   * @param {number} renderedLabelLength - the length of the already rendered text - median length is 8
+   */
+  static getAdjustedSegmentLabel(segment, renderedCharLength: number = 8): string {
+    let label = `${segment.label}`;
+    let arcLength = GraphicLib.getArcLength(segment.startAngle, segment.endAngle, segment.innerRadius);
+    let visibleCharLimit = Math.floor(arcLength / renderedCharLength);
+
+    if (visibleCharLimit > label.length) { return label; }
+
+    return GraphicLib.getSlicedText(label, label.length - visibleCharLimit);
+  }
+
+  /**
+   * Resolves a node label, if it's outside container, the text is sliced
+   * @param label
+   * @param elementLength
+   * @param angle - Node angle
+   * @param radius - Radius from circle center to start of label
+   * @param ...args - Destructured argument - Container Sizes
+   */
+  static getAdjustedNodeLabel(label, elementLength, angle: number, radius: number, { width, height }): string {
+    let charLength = Math.floor(elementLength / `${label}`.length);
+    let labelRadius = radius + elementLength + 2 * charLength; //radius from center circle to end of text // 2 * charLength is an error margin
+    let endpointX = Math.abs(GraphicLib.getCoordXbyRadial(angle, labelRadius)); // determine coords of the end of the text - endpoint
+    let endpointY = Math.abs(GraphicLib.getCoordYbyRadial(angle, labelRadius));
+    // get the max length of the sides determinated by the parallels to 0x, 0y and endpoint
+    // the text length parralel to 0x or 0y that overflows
+    let overflowDiff = Math.ceil(Math.max(endpointX - width / 2, endpointY - height / 2));
+
+    if (overflowDiff < 0) { return `${label}`; } // if the diffs between endpoint and container limits < 0, the text does NOT overflow
+
+    // the text length that overflows is represented by the hypotenuse of the formed right angled triangle
+    // adjacentAngle is determinated based on node's angle
+    let adjacentAngle = angle % (Math.PI / 2);
+    // if adjacentAngle < 45deg then it is equal to angle because they are interior angles determinated by 2 parralel lines
+    // if adjacentAngle >= 45deg then the interior angle is computed by substracting node's angle from 90 deg
+    if (adjacentAngle >= Math.PI / 4) { adjacentAngle = Math.PI / 2 - adjacentAngle; }
+    let overflowLength = overflowDiff / (Math.cos(adjacentAngle) || 1);
+
+    return GraphicLib.getSlicedText(`${label}`, Math.abs(Math.ceil(overflowLength / charLength)))
   }
 }
